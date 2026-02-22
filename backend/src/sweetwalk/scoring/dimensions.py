@@ -1,4 +1,3 @@
-import numpy as np
 from shapely.geometry import LineString
 import geopandas as gpd
 
@@ -51,17 +50,22 @@ def score_greenery(
     # Green area coverage ratio
     green_coverage = 0.0
     if not green_areas.empty:
-        clipped = green_areas.clip(buffer)
-        if not clipped.empty:
-            green_coverage = clipped.geometry.area.sum() / buffer_area
+        candidate_idx = green_areas.sindex.query(buffer, predicate="intersects")
+        if len(candidate_idx) > 0:
+            candidates = green_areas.iloc[candidate_idx]
+            intersection = candidates.intersection(buffer)
+            green_coverage = intersection.area.sum() / buffer_area
 
     # Tree density bonus (cap at 0.3 bonus)
     tree_bonus = 0.0
     if not trees.empty:
-        trees_in_buffer = trees[trees.geometry.within(buffer)]
-        # Normalize: 1 tree per 10m of street = max bonus
-        tree_density = len(trees_in_buffer) / max(1.0, edge_geom.length / 10.0)
-        tree_bonus = min(0.3, tree_density * 0.3)
+        candidate_idx = trees.sindex.query(buffer, predicate="intersects")
+        if len(candidate_idx) > 0:
+            candidates = trees.iloc[candidate_idx]
+            trees_in_buffer = candidates[candidates.within(buffer)]
+            # Normalize: 1 tree per 10m of street = max bonus
+            tree_density = len(trees_in_buffer) / max(1.0, edge_geom.length / 10.0)
+            tree_bonus = min(0.3, tree_density * 0.3)
 
     return round(min(1.0, green_coverage + tree_bonus), 3)
 
@@ -76,8 +80,11 @@ def score_heritage(
         return 0.0
 
     buffer = edge_geom.buffer(buffer_m)
-    pois_in_buffer = heritage_pois[heritage_pois.geometry.within(buffer)]
-    count = len(pois_in_buffer)
+    candidate_idx = heritage_pois.sindex.query(buffer, predicate="intersects")
+    if len(candidate_idx) == 0:
+        return 0.0
+    candidates = heritage_pois.iloc[candidate_idx]
+    count = int(candidates.within(buffer).sum())
 
     # Sigmoid-like scaling: 1 POI = 0.3, 3 POIs = 0.7, 5+ POIs = ~1.0
     score = 1.0 - 1.0 / (1.0 + count * 0.5)
@@ -94,16 +101,18 @@ def score_water(
         return 0.0
 
     buffer = edge_geom.buffer(buffer_m)
-    water_in_buffer = water_features.clip(buffer)
-
-    if water_in_buffer.empty:
+    candidate_idx = water_features.sindex.query(buffer, predicate="intersects")
+    if len(candidate_idx) == 0:
         return 0.0
+
+    candidates = water_features.iloc[candidate_idx]
+    intersection = candidates.intersection(buffer)
 
     # Base score: water is nearby
     score = 0.5
 
     # Parallelism bonus: does the street run along water?
-    water_length_in_buffer = water_in_buffer.geometry.length.sum()
+    water_length_in_buffer = intersection.length.sum()
     parallelism = min(1.0, water_length_in_buffer / max(1.0, edge_geom.length))
     score += 0.5 * parallelism
 
@@ -120,8 +129,11 @@ def score_culture(
         return 0.0
 
     buffer = edge_geom.buffer(buffer_m)
-    pois_in_buffer = culture_pois[culture_pois.geometry.within(buffer)]
-    count = len(pois_in_buffer)
+    candidate_idx = culture_pois.sindex.query(buffer, predicate="intersects")
+    if len(candidate_idx) == 0:
+        return 0.0
+    candidates = culture_pois.iloc[candidate_idx]
+    count = int(candidates.within(buffer).sum())
 
     score = 1.0 - 1.0 / (1.0 + count * 0.5)
     return round(min(1.0, score), 3)
