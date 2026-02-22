@@ -35,6 +35,8 @@ env/
 *.pickle
 *.pkl
 *.gpkg
+backend/cache/
+backend/data/
 
 # OS
 .DS_Store
