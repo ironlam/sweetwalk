@@ -108,9 +108,6 @@ export default function Map({ onStartSet, onEndSet, routes, selectedRouteIndex }
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="w-full h-full" />
-      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 text-sm text-slate-600 shadow-sm">
-        Tap map to set {clickMode === "start" ? "start point" : "destination"}
-      </div>
     </div>
   );
 }
