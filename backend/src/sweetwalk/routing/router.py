@@ -1,5 +1,6 @@
 import numpy as np
 from fastapi import APIRouter, HTTPException
+from pyproj import Transformer
 
 from sweetwalk.graph.store import graph_store
 from sweetwalk.routing.engine import find_routes
@@ -26,5 +27,14 @@ def compute_route(req: RouteRequest):
 
     if not routes:
         raise HTTPException(status_code=404, detail="No walking route found")
+
+    # Convert coordinates from graph CRS (UTM) back to WGS84 lon/lat
+    graph_crs = G.graph.get("crs", "EPSG:4326")
+    if graph_crs != "EPSG:4326":
+        transformer = Transformer.from_crs(graph_crs, "EPSG:4326", always_xy=True)
+        for route in routes:
+            route.coordinates = [
+                list(transformer.transform(x, y)) for x, y in route.coordinates
+            ]
 
     return RoutesResponse(routes=routes, city=city)
