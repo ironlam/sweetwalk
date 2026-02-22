@@ -1,1 +1,63 @@
+# Claude
 CLAUDE.md
+
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Next.js
+.next/
+out/
+
+# Build
+build/
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+*.egg
+venv/
+.venv/
+env/
+
+# Data pipeline artifacts
+*.pickle
+*.pkl
+*.gpkg
+
+# OS
+.DS_Store
+Thumbs.db
+
+# JetBrains IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Debug / logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.pytest_cache/
+htmlcov/
+
+# Misc
+*.swp
+*.swo
+*~
